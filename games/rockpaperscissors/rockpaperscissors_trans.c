@@ -2,6 +2,7 @@
 #include "../../TCP/response.h"
 #include "../../TCP/response_status.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 struct state_transition rps_transitions[] =
         {
@@ -15,6 +16,7 @@ struct state_transition rps_transitions[] =
 
 int rps_start(struct dc_fsm_environment *env){
     RockPaperScissorsEnv *r_env = (RockPaperScissorsEnv*) env;
+    printf("%s: Starting Game\n", r_env->common.common.name);
     for(int i = 0 ; i < r_env->common.num_players; i++){
         Client* client = r_env->common.clients[i];
         write_response(client->fd, RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_START, 0, NULL);
