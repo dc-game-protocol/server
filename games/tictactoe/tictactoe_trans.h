@@ -4,7 +4,7 @@
 #include <dc_fsm/fsm.h>
 #include "tictactoe_env.h"
 
-extern struct state_transition transitions[];
+extern struct state_transition ttt_transitions[];
 
 int accept_connections(struct dc_fsm_environment *env);
 int start_game(struct dc_fsm_environment *env);
