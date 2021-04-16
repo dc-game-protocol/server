@@ -5,7 +5,7 @@
 #include <regex.h>
 #include <stdlib.h>
 #include "tictactoe_trans.h"
-#include "helper.h"
+#include "../../server/helper.h"
 
 typedef enum
 {

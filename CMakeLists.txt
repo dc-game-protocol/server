@@ -5,10 +5,13 @@ set(CMAKE_C_STANDARD 11)
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
-add_library(tictactoe tictactoe_trans.c tictactoe_trans.h tictactoe_env.h tictactoe_env.c)
-target_compile_options(tictactoe PRIVATE -Wpedantic -Wall -Wextra)
+#add_library(tictactoe games/tictactoe/tictactoe_trans.c games/tictactoe/tictactoe_trans.h games/tictactoe/tictactoe_env.h games/tictactoe/tictactoe_env.c)
+#target_compile_options(tictactoe PRIVATE -Wpedantic -Wall -Wextra)
 
-add_executable(server server.c helper.h helper.c)
+add_library(tcp TCP/request.c TCP/request.h TCP/response_status.h TCP/response.c TCP/response.h)
+target_compile_options(tcp PRIVATE -Wpedantic -Wall -Wextra)
 
-target_link_libraries(server dc dc_fsm tictactoe)
+add_executable(server server.c server/helper.h server/helper.c server/server_env.c server/server_env.h server/client.c server/client.h server/game_env.c server/game_env.h )
+
+target_link_libraries(server dc dc_fsm  tcp) #tictactoe
 target_compile_options(server PRIVATE -g -Wpedantic -Wall -Wextra)

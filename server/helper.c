@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include "helper.h"
-#include "tictactoe_trans.h"
+//#include "tictactoe_trans.h"
 
 int get_port(int argc, const char *argv[]){
     int opt;
@@ -40,14 +40,16 @@ int get_port(int argc, const char *argv[]){
     return DEFAULT_PORT;
 }
 
-void run(TicTacToeEnv* env){
-    int code = dc_fsm_run((struct dc_fsm_environment *) env, &env->common.from_state_id,
-                          &env->common.current_state_id, transitions, false);
-    if (code != 0) {
-        fprintf(stderr, "Cannot move from %d to %d\n", env->common.from_state_id,
-                env->common.current_state_id);
-        exit(EXIT_FAILURE);
-    }
+void run(GameEnv * env){
+    //TODO: check game and match transition
+//    int code = dc_fsm_run((struct dc_fsm_environment *) env, &env->common.from_state_id,
+//                          &env->common.current_state_id, transitions, false);
+//    if (code != 0) {
+//        fprintf(stderr, "Cannot move from %d to %d\n", env->common.from_state_id,
+//                env->common.current_state_id);
+//        exit(EXIT_FAILURE);
+//    }
+
 }
 
 int has_won_game(int cfd, int board[9]) {
