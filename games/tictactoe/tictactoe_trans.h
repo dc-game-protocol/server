@@ -6,6 +6,9 @@
 
 extern struct state_transition ttt_transitions[];
 
+int ttt_start(struct dc_fsm_environment *env);
+
+
 int accept_connections(struct dc_fsm_environment *env);
 int start_game(struct dc_fsm_environment *env);
 int x_turn_start(struct dc_fsm_environment *env);

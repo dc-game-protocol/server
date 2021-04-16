@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include "tictactoe_trans.h"
 #include "../../server/helper.h"
+#include "../../TCP/response.h"
+#include "../../TCP/response_status.h"
 
 typedef enum
 {
@@ -19,74 +21,32 @@ typedef enum
 
 struct state_transition ttt_transitions[] =
         {
-                {FSM_INIT,              ACCEPTING_CONNECTIONS, accept_connections},
-                {ACCEPTING_CONNECTIONS, FSM_EXIT,              accept_connections},
-                {FSM_EXIT,              CONNECTED_CLIENTS,     start_game},
-                {CONNECTED_CLIENTS,     X_TURN,                x_turn_start},
-                {X_TURN,                FSM_EXIT,              x_turn_exec},
-                {FSM_EXIT,              X_FAIL,                x_fail},
-                {X_FAIL,                X_TURN,                x_turn_start},
-                {FSM_EXIT,              X_SUCCESS,             x_success},
-                {X_SUCCESS,             O_TURN,                o_turn_start},
-                {O_TURN,                FSM_EXIT,              o_turn_exec},
-                {FSM_EXIT,              O_FAIL,                o_fail},
-                {O_FAIL,                O_TURN,                o_turn_start},
-                {FSM_EXIT,              O_SUCCESS,             o_success},
-                {O_SUCCESS,             X_TURN,                x_turn_start},
-                {X_SUCCESS,             X_WIN,                 x_win},
-                {O_SUCCESS,             O_WIN,                 o_win},
-                {X_SUCCESS,             TIE,                   tie},
-                {O_SUCCESS,             TIE,                   tie},
-                {X_WIN,                 COMPLETE,              complete_game},
-                {O_WIN,                 COMPLETE,              complete_game},
-                {TIE,                   COMPLETE,              complete_game},
+                {FSM_INIT,              START_GAME,            ttt_start},
+                {START_GAME,            FSM_EXIT,              ttt_validate},
+                {FSM_EXIT,              FSM_EXIT,              ttt_validate},
+                {FSM_EXIT,              COMPLETE,              ttt_complete},
                 {COMPLETE,              FSM_EXIT,              NULL},
-                {FSM_EXIT,              O_WIN,                 o_win},
-                {FSM_EXIT,              X_WIN,                 x_win},
-                {FSM_IGNORE,            FSM_IGNORE,    NULL},
+                {FSM_IGNORE,            FSM_IGNORE,            NULL}
         };
 
-int accept_connections(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
+int ttt_start(struct dc_fsm_environment *env) {
+    TicTacToeEnv *t_env = (TicTacToeEnv *) env;
+    printf("%s: Starting Game\n", t_env->common.common.name);
+    t_env->turn = t_env->common.clients[0]->uid;
 
-    int fd = dc_accept(t_env->server->sfd, NULL, NULL);
-    if(fd>t_env->server->max_fd){
-        t_env->server->max_fd = fd;
-    }
+    uint8_t buffer[1];
 
-    if(!t_env->x_connected){
-        t_env->cfd_x = fd;
-        t_env->x_connected = 1;
-        FD_SET(t_env->cfd_x, &(t_env->server->rfds_master));
-        printf("NEW GAME: Client x connected\n");
-        return FSM_EXIT;
-    }else{
-        t_env->cfd_o = fd;
-        t_env->o_connected = 1;
-        FD_SET(t_env->cfd_o, &(t_env->server->rfds_master));
-        printf("NEW GAME: Client o connected\n");
+    buffer[0] = 1;
+    write_response(t_env->common.clients[0]->fd, RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_START, 1, buffer);
 
-        sprintf(t_env->common.name, "GAME(X: %d, O: %d)", t_env->cfd_x, t_env->cfd_o);
-        printf("%s: New game, start\n", t_env->common.name);
-        return CONNECTED_CLIENTS;
-    }
+    buffer[0] = 2;
+    write_response(t_env->common.clients[1]->fd, RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_START, 1, buffer);
+
+    return FSM_EXIT;
 }
 
-int start_game(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    printf("%s: Starting Game\n", t_env->common.name);
+int ttt_validate(struct dc_fsm_environment *env){
 
-    memset(t_env->buffer, 0, BUFFSIZE);
-
-    sprintf(t_env->buffer, "%s", "X");
-    dc_write(t_env->cfd_x, t_env->buffer, 1);
-
-    sprintf(t_env->buffer, "%s", "O");
-    dc_write(t_env->cfd_o, t_env->buffer, 1);
-
-    return X_TURN;
 }
 
 int x_turn_start(struct dc_fsm_environment *env) {

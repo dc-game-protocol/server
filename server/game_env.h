@@ -14,10 +14,6 @@
 typedef enum
 {
     START_GAME = FSM_APP_STATE_START,
-    WAITING,
-    VALIDATING,
-    ERROR,
-    OK,
     COMPLETE
 } GAME_STATE;
 
