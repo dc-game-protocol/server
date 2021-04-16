@@ -18,7 +18,7 @@ GameEnv* gameEnv_create(int game_id){
 
 void gameEnv_endGame(GameEnv* gameEnv, ServerEnv* serverEnv, int quit_fd){
     for(int i = 0; i < gameEnv->num_players; i++){
-        if(gameEnv->clients[i]->fd != quit_fd){
+        if(gameEnv->clients[i] != NULL && gameEnv->clients[i]->fd != quit_fd){
             write_response(gameEnv->clients[i]->fd, RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_DISCONNECT, 0, NULL);
         }
     }
