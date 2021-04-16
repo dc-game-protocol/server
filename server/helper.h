@@ -2,7 +2,8 @@
 #define TIC_TAC_TOE_HELPER_H
 
 #include "game_env.h"
-#include <dc_fsm/fsm.h>
+//#include <dc_fsm/fsm.h>
+#include "../fsm_local/fsm.h"
 #define DEFAULT_PORT 3333
 int get_port(int argc, const char *argv[]);
 void run(GameEnv * env);

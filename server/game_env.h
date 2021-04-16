@@ -6,9 +6,20 @@
 #include "server_env.h"
 #include "client.h"
 
-#define NUMGAMES 2
+#define TITLESIZE 100
+#define NUM_GAMES 2
 #define TTT 1
 #define RPS 2
+
+typedef enum
+{
+    START_GAME = FSM_APP_STATE_START,
+    WAITING,
+    VALIDATING,
+    ERROR,
+    OK,
+    COMPLETE
+} GAME_STATE;
 
 struct GameEnv_S{
     struct dc_fsm_environment common;

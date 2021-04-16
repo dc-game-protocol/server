@@ -9,6 +9,7 @@ typedef struct GameEnv_S;
 struct Client_S{
     int fd;
     uint32_t uid;
+    uint32_t ordering;
     struct sockaddr_in * addr;
     socklen_t addr_len;
     struct GameEnv_S* gameEnv;

@@ -4,6 +4,8 @@
 #include "helper.h"
 //#include "tictactoe_trans.h"
 
+#include "../games/rockpaperscissors/rockpaperscissors_trans.h"
+
 int get_port(int argc, const char *argv[]){
     int opt;
     int opt_index;
@@ -41,14 +43,20 @@ int get_port(int argc, const char *argv[]){
 }
 
 void run(GameEnv * env){
-    //TODO: check game and match transition
-//    int code = dc_fsm_run((struct dc_fsm_environment *) env, &env->common.from_state_id,
-//                          &env->common.current_state_id, transitions, false);
-//    if (code != 0) {
-//        fprintf(stderr, "Cannot move from %d to %d\n", env->common.from_state_id,
-//                env->common.current_state_id);
-//        exit(EXIT_FAILURE);
-//    }
+    struct state_transition* transitions;
+    if(env->game_id == TTT){
+
+    }else if(env->game_id == RPS){
+        transitions = rps_transitions;
+    }
+
+    int code = dc_fsm_run((struct dc_fsm_environment *) env, &env->common.from_state_id,
+                          &env->common.current_state_id, transitions, true);
+    if (code != 0) {
+        fprintf(stderr, "Cannot move from %d to %d\n", env->common.from_state_id,
+                env->common.current_state_id);
+        exit(EXIT_FAILURE);
+    }
 
 }
 

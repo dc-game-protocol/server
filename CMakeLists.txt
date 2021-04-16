@@ -11,7 +11,7 @@ link_directories(/usr/local/lib)
 add_library(tcp TCP/request.c TCP/request.h TCP/response_status.h TCP/response.c TCP/response.h)
 target_compile_options(tcp PRIVATE -Wpedantic -Wall -Wextra)
 
-add_executable(server server.c server/helper.h server/helper.c server/server_env.c server/server_env.h server/client.c server/client.h server/game_env.c server/game_env.h )
+add_executable(server server.c server/helper.h server/helper.c server/server_env.c server/server_env.h server/client.c server/client.h server/game_env.c server/game_env.h games/rockpaperscissors/rockpaperscissors_env.c games/rockpaperscissors/rockpaperscissors_env.h games/rockpaperscissors/rockpaperscissors_trans.c games/rockpaperscissors/rockpaperscissors_trans.h fsm_local/fsm.h fsm_local/fsm.c)
 
 target_link_libraries(server dc dc_fsm  tcp) #tictactoe
 target_compile_options(server PRIVATE -g -Wpedantic -Wall -Wextra)

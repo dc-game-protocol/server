@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <memory.h>
+#include <unistd.h>
 #include "client.h"
 
 void client_destroy(Client* client){
     free(client->addr);
+    close(client->fd);
     //clients get freed by game, !free game here
 }
 

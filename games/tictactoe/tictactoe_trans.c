@@ -17,7 +17,7 @@ typedef enum
     STATUS_TIE
 } TICTACTOE_STATUS;
 
-struct state_transition transitions[] =
+struct state_transition ttt_transitions[] =
         {
                 {FSM_INIT,              ACCEPTING_CONNECTIONS, accept_connections},
                 {ACCEPTING_CONNECTIONS, FSM_EXIT,              accept_connections},

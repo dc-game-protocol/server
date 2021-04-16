@@ -2,7 +2,7 @@
 #include <string.h>
 #include "tictactoe_env.h"
 
-const int ttt_numplayers = 2;
+const int ttt_num_players = 2;
 
 TicTacToeEnv* ticTacToeEnv_create(){
     TicTacToeEnv* this = (TicTacToeEnv*)malloc(sizeof(TicTacToeEnv));
@@ -11,8 +11,8 @@ TicTacToeEnv* ticTacToeEnv_create(){
 
     this->common.game_id = TTT;
     this->common.protocol_ver = 1;
-    this->common.num_players = ttt_numplayers;
-    this->common.clients = (Client **) calloc(ttt_numplayers, sizeof(Client*));
+    this->common.num_players = ttt_num_players;
+    this->common.clients = (Client **) calloc(ttt_num_players, sizeof(Client*));
 
     this->common.common.name= (char*)malloc(TITLESIZE*sizeof(char));
     this->common.common.from_state_id = FSM_INIT;

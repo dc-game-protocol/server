@@ -1,13 +1,15 @@
 #include <dc/unistd.h>
 #include <stdlib.h>
+#include <netinet/in.h>
 #include "request.h"
 #include "response_status.h"
 
 int get_request(int fd, Request* req){
-    int retval = dc_read(fd, &req->uid , 1);
+    int retval = dc_read(fd, &req->uid , 4);
     if(retval == 0){
         return PARSE_DISCONNECT;
     }
+    req->uid = ntohl(req->uid);
     retval = dc_read(fd, &req->type, 1);
     if(retval == 0){
         return RESPONSE_ERROR_REQUEST;
@@ -30,7 +32,7 @@ int get_request(int fd, Request* req){
     retval = dc_read(fd, req->payload, req->len_payload);
     if(retval != req->len_payload){
         return RESPONSE_ERROR_PAYLOAD;
-    }else if(req->uid != fd){
+    }else if(req->type!= REQTYPE_CONFIRMATION && req->uid != fd){
         //invalid uid(31)
         return RESPONSE_ERROR_UID;
     }else{

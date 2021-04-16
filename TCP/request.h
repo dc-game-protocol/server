@@ -11,7 +11,7 @@
 #define PARSE_VALID 0
 
 typedef struct{
-    uint8_t uid;
+    uint32_t uid;
     uint8_t type;
     uint8_t context;
     uint8_t len_payload;

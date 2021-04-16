@@ -29,7 +29,8 @@ int main(int argc, const char *argv[]) {
     serverEnv_create(&serverEnv, port);
 
     Request req;
-    GameEnv* new_games[NUMGAMES];
+    GameEnv* new_games[NUM_GAMES];
+
     uint8_t udp_buffer[udp_len];
     struct sockaddr_in in_addr;
     socklen_t addr_len;
@@ -64,11 +65,15 @@ int main(int argc, const char *argv[]) {
                 *client->addr = in_addr;
                 client->addr_len = addr_len;
             }
+            //drop packet if it's late
+            if(ordering<client->ordering) continue;
             //transmit data to all sockets in their game
             for(int i = 0; i < client->gameEnv->player_count; i++){
-                if(client->uid != uid)
-                    sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->addr,client->addr_len);
+                if(client->gameEnv->clients[i]->uid != uid && client->gameEnv->clients[i]->addr != NULL)
+                    sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->gameEnv->clients[i]->addr,client->gameEnv->clients[i]->addr_len);
             }
+            //update client's ordering
+            client->ordering = ordering;
         }else if (FD_ISSET(serverEnv.tcp_fd, &fds_temp)) {
             //add to clients
             int fd = dc_accept(serverEnv.tcp_fd, NULL, NULL);
@@ -82,10 +87,17 @@ int main(int argc, const char *argv[]) {
                     int res_status = get_request(i, &req);
                     if(res_status == PARSE_DISCONNECT){
                         //handle disconnect
-                        if(serverEnv.clients[i]->gameEnv != NULL)
+                        if(serverEnv.clients[i]->gameEnv != NULL) {
+                            if(serverEnv.clients[i]->gameEnv == new_games[serverEnv.clients[i]->gameEnv->game_id-1]){
+                                new_games[serverEnv.clients[i]->gameEnv->game_id-1] = NULL;
+                            }
                             gameEnv_endGame(serverEnv.clients[i]->gameEnv, &serverEnv, i);
-                        else
+                        }else{
                             FD_CLR(i, &serverEnv.rfds_master);
+                            client_destroy(serverEnv.clients[i]);
+                            serverEnv.clients[i] = NULL;
+                        }
+
                     }else if(res_status == PARSE_VALID){
                         //get client (parse request uid byte)
                         Client* curr_client = serverEnv.clients[i];
@@ -135,10 +147,10 @@ int confirm_ruleset(Request* req, GameEnv** new_games, Client* client){
         return RESPONSE_ERROR_CONTEXT;
     }
 
-    uint8_t game_id = req->payload[0];
-    uint8_t protocol_v = req->payload[1];
+    uint8_t protocol_v = req->payload[0];
+    uint8_t game_id = req->payload[1];
     //validate request
-    if(game_id > NUMGAMES || protocol_v != 1) {
+    if(game_id > NUM_GAMES || protocol_v != 1) {
         return RESPONSE_ERROR_PAYLOAD;
     }
 
@@ -155,10 +167,11 @@ int confirm_ruleset(Request* req, GameEnv** new_games, Client* client){
     //add game to client
     client->gameEnv = curr_env;
 
+
     //update client
-    uint8_t buffer[req->len_payload];
-    buffer[0]= client->fd;
-    write_response(client->fd, RESPONSE_SUCCESS_SUCCESS, req->type, 1, buffer);
+    uint8_t buffer[4] = {0};
+    buffer[0] = client->uid;
+    write_response(client->fd, RESPONSE_SUCCESS_SUCCESS, req->type, 4, buffer);
     //run game if sufficent players
     if(curr_env->player_count == curr_env->num_players){
         run(curr_env);
