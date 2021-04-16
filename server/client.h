@@ -7,8 +7,10 @@
 
 typedef struct GameEnv_S;
 struct Client_S{
-    int fd;//uid
+    int fd;
+    uint32_t uid;
     struct sockaddr_in * addr;
+    socklen_t addr_len;
     struct GameEnv_S* gameEnv;
 };
 typedef struct Client_S Client;

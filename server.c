@@ -16,6 +16,7 @@
 #include "TCP/response.h"
 
 
+const size_t udp_len = 5008;
 
 int confirm_ruleset(Request* req, GameEnv** new_games, Client* client);
 
@@ -29,6 +30,9 @@ int main(int argc, const char *argv[]) {
 
     Request req;
     GameEnv* new_games[NUMGAMES];
+    uint8_t udp_buffer[udp_len];
+    struct sockaddr_in in_addr;
+    socklen_t addr_len;
 
     //init fd sets
     fd_set fds_temp;
@@ -46,10 +50,25 @@ int main(int argc, const char *argv[]) {
         }
 
         if(FD_ISSET(serverEnv.udp_fd, &fds_temp)){
+            int n_recv= recvfrom(serverEnv.udp_fd, udp_buffer, udp_len, MSG_WAITALL, &in_addr, &addr_len);
+            if(n_recv< 64) continue;
+            //parse ordering
+            uint32_t ordering = udp_buffer[0] | (udp_buffer[1] << 8) | (udp_buffer[2] << 16) | (udp_buffer[3] << 24);
             //parse user id
+            uint32_t uid = udp_buffer[4] | (udp_buffer[5] << 8) | (udp_buffer[6] << 16) | (udp_buffer[7] << 24);
             //find client with user id
+            Client* client = serverEnv.clients[uid];
             //if they don't have a socket, create socket
+            if(client->addr == NULL){
+                client->addr = (struct sockaddr_in *) calloc(0, sizeof(struct sockaddr_in));
+                *client->addr = in_addr;
+                client->addr_len = addr_len;
+            }
             //transmit data to all sockets in their game
+            for(int i = 0; i < client->gameEnv->player_count; i++){
+                if(client->uid != uid)
+                    sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->addr,client->addr_len);
+            }
         }else if (FD_ISSET(serverEnv.tcp_fd, &fds_temp)) {
             //add to clients
             int fd = dc_accept(serverEnv.tcp_fd, NULL, NULL);
@@ -137,10 +156,13 @@ int confirm_ruleset(Request* req, GameEnv** new_games, Client* client){
     client->gameEnv = curr_env;
 
     //update client
-    write_response(client->fd, RESPONSE_SUCCESS_SUCCESS, req->type, 0, NULL);
+    uint8_t buffer[req->len_payload];
+    buffer[0]= client->fd;
+    write_response(client->fd, RESPONSE_SUCCESS_SUCCESS, req->type, 1, buffer);
     //run game if sufficent players
     if(curr_env->player_count == curr_env->num_players){
         run(curr_env);
+        //reset new game holder for game
         new_games[game_id-1] = NULL;
     }
 

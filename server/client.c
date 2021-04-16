@@ -11,6 +11,7 @@ Client * client_create(int fd, ServerEnv* serverEnv){
     Client* this = (Client*)malloc(sizeof (Client));
     memset(this, 0, sizeof(Client));
     this->fd = fd;
+    this->uid = fd;
 
     FD_SET(fd, &serverEnv->rfds_master);
     if(fd > serverEnv->max_fd){
