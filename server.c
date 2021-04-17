@@ -63,9 +63,9 @@ int main(int argc, const char *argv[]) {
             //if they don't have a socket, create socket
             if(client->addr == NULL){
                 client->addr = (struct sockaddr_in *) calloc(0, sizeof(struct sockaddr_in));
-                *client->addr = in_addr;
-                client->addr_len = addr_len;
             }
+            *(client->addr) = in_addr;
+            client->addr_len = addr_len;
             //drop packet if it's late
             if(ordering<client->ordering) continue;
             //transmit data to all sockets in their game
