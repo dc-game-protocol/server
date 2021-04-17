@@ -53,7 +53,7 @@ int rps_validate(struct dc_fsm_environment *env){
             complete = 0;
         }
     }
-    write_response(req.uid, RESPONSE_SUCCESS_SUCCESS, req.context, 0, NULL);
+    write_response(req.uid, RESPONSE_SUCCESS_SUCCESS, req.type, 0, NULL);
     return complete? COMPLETE:FSM_EXIT;
 }
 
