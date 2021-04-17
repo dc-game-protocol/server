@@ -118,10 +118,14 @@ int main(int argc, const char *argv[]) {
                                     break;
                                 case REQTYPE_GAME:
                                     //game runs move
-                                    curr_client->gameEnv->buffer = &req;
-                                    run(curr_client->gameEnv);
-                                    if (curr_client->gameEnv->complete) {
-                                        gameEnv_destroy(curr_client->gameEnv, &serverEnv);
+                                    if(new_games[curr_client->gameEnv->game_id-1]==curr_client->gameEnv){
+                                        res_status = RESPONSE_ERROR_REQUEST;
+                                    }else{
+                                        curr_client->gameEnv->buffer = &req;
+                                        run(curr_client->gameEnv);
+                                        if (curr_client->gameEnv->complete) {
+                                            gameEnv_destroy(curr_client->gameEnv, &serverEnv);
+                                        }
                                     }
                                     break;
                                 default:
