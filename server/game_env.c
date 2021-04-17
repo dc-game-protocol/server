@@ -8,7 +8,7 @@
 
 GameEnv* gameEnv_create(int game_id){
     if(game_id == TTT){
-//        return ticTacToeEnv_create();
+        return ticTacToeEnv_create();
     }else if(game_id == RPS){
         //rps env here
         return rockPaperScissorsEnv_create();
@@ -36,9 +36,9 @@ void gameEnv_destroy(GameEnv* gameEnv, ServerEnv* serverEnv){
     }
     //delete game specific attributes
     if(gameEnv->game_id == TTT){
-//        ticTacToeEnv_destroy(gameEnv);
+
     }else if(gameEnv->game_id  == RPS){
-        //rps env here
+
     }
 
     free(gameEnv->clients);

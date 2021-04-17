@@ -8,16 +8,7 @@
 #include "../../server/helper.h"
 #include "../../TCP/response.h"
 #include "../../TCP/response_status.h"
-
-typedef enum
-{
-    STATUS_GO,
-    STATUS_WAIT,
-    STATUS_FAIL,
-    STATUS_WIN,
-    STATUS_LOSE,
-    STATUS_TIE
-} TICTACTOE_STATUS;
+#include "../../server/helper.h"
 
 struct state_transition ttt_transitions[] =
         {
@@ -50,215 +41,60 @@ int ttt_validate(struct dc_fsm_environment *env){
     Request req = *t_env->common.buffer;
 
     if(req.uid != t_env->turn){
-        write_response(req.uid, RESPONSE_GAME_ERROR_TURN, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_GAME_ERROR_TURN, req.type, 0, NULL);
         return FSM_EXIT;
     }else if(req.context != 1){
-        write_response(req.uid, RESPONSE_ERROR_CONTEXT, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_ERROR_CONTEXT, req.type, 0, NULL);
         return FSM_EXIT;
     }else if(req.len_payload != 1){
-        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.type, 0, NULL);
         return FSM_EXIT;
-    }else if(!(req.payload[0]>0 && req.payload[0]<4)){
-        write_response(req.uid, RESPONSE_GAME_ERROR_INVALID, req.context, 0, NULL);
+    }else if(!(req.payload[0]>=0 && req.payload[0]<=8)){
+        write_response(req.uid, RESPONSE_GAME_ERROR_INVALID, req.type, 0, NULL);
+        return FSM_EXIT;
+    }else if(t_env->board[req.payload[0]] != -1){
+        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.type, 0, NULL);
         return FSM_EXIT;
     }
 
-}
 
-int x_turn_start(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
+    t_env->board[req.payload[0]] = t_env->turn;
+    write_response(req.uid, RESPONSE_SUCCESS_SUCCESS, req.type, 0, NULL);
 
-//    FD_SET(t_env->cfd_x, &(t_env->server->rfds_master));
-    t_env->server->games[t_env->cfd_x] = t_env;
-    return FSM_EXIT;
-}
+    if(has_won_game(t_env->turn, t_env->board)){
+        uint8_t buffer[2];
+        buffer[1] = req.payload[0];
 
-int x_turn_exec(struct dc_fsm_environment *env){
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-
-//    FD_CLR(t_env->cfd_x, &(t_env->server->rfds_master));
-    t_env->server->games[t_env->cfd_x] = NULL;
-
-    memset(t_env->buffer, 0, BUFFSIZE);
-    int read_status = dc_read(t_env->cfd_x, t_env->buffer, 1);
-    printf("%s: %s received from x.\n", t_env->common.name, t_env->buffer);
-    t_env->prev_player = 'X';
-    t_env->prev_pos = 9; // 9 represents invalid
-    if (read_status <= 0) {
-        t_env->x_connected = 0;
-        printf("%s: X has disconnected\n", t_env->common.name);
-        return O_WIN;
-    }
-
-    regex_t regex;
-    regcomp(&regex, "[0-8]", REG_EXTENDED);
-    int status = regexec(&regex, t_env->buffer, 0, NULL, 0);
-
-    if (status == 0) {                  // matches
-        int tile = strtol(t_env->buffer, NULL, 10);
-        t_env->prev_pos = tile;
-        if (t_env->board[tile] == -1) {        // spot is free
-            t_env->board[tile] = t_env->cfd_x;
-            return X_SUCCESS;
+        for(int i = 0; i < t_env->common.num_players; i++) {
+            buffer[0] = (t_env->common.clients[i]->uid == t_env->turn)? 1 : 2;
+            write_response(t_env->common.clients[i]->uid , RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_END, 2, buffer);
         }
-        return X_FAIL;
-    }
-    return X_FAIL;
-}
+        return COMPLETE;
+    }else if(is_game_tied(t_env->board)){
+        uint8_t buffer[2];
+        buffer[0] = 3;
+        buffer[1] = req.payload[0];
 
-int x_fail(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    printf("%s: X fail\n", t_env->common.name);
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_FAIL);
-    dc_write(t_env->cfd_x, t_env->buffer, 3);
-    return X_TURN;
-}
-
-int x_success(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    if (has_won_game(t_env->cfd_x, t_env->board)) {
-        return X_WIN;
-    }
-    if (is_game_tied(t_env->board)) {
-        return TIE;
-    }
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_WAIT);
-    send(t_env->cfd_x, t_env->buffer, 3, MSG_NOSIGNAL);
-
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_GO);
-    send(t_env->cfd_o, t_env->buffer, 3, MSG_NOSIGNAL);
-    return O_TURN;
-}
-
-int x_win(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    memset(t_env->buffer, 0, BUFFSIZE);
-
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_WIN);
-    dc_write(t_env->cfd_x, t_env->buffer, 3);
-    if (t_env->o_connected == 1) {
-        sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_LOSE);
-        dc_write(t_env->cfd_o, t_env->buffer, 3);
-    }
-    printf("%s: X wins!\n", t_env->common.name);
-    return COMPLETE;
-}
-
-int o_turn_start(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-
-//    FD_SET(t_env->cfd_o, &(t_env->server->rfds_master));
-    t_env->server->games[t_env->cfd_o] = t_env;
-    return FSM_EXIT;
-}
-
-int o_turn_exec(struct dc_fsm_environment *env){
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-
-//    FD_CLR(t_env->cfd_o, &(t_env->server->rfds_master));
-    t_env->server->games[t_env->cfd_o] = NULL;
-
-    memset(t_env->buffer, 0, BUFFSIZE);
-    int read_status = dc_read(t_env->cfd_o, t_env->buffer, 1);
-    printf("%s: %s received from o.\n", t_env->common.name, t_env->buffer);
-    t_env->prev_player = 'O';
-    t_env->prev_pos = 9; // 9 represents invalid
-    if (read_status <= 0) {
-        t_env->o_connected = 0;
-        printf("%s: O has disconnected\n", t_env->common.name);
-        return X_WIN;
-    }
-
-    regex_t regex;
-    regcomp(&regex, "[0-8]", REG_EXTENDED);
-    int status = regexec(&regex, t_env->buffer, 0, NULL, 0);
-
-    if (status == 0) {                  // matches
-        int tile = strtol(t_env->buffer, NULL, 10);
-        t_env->prev_pos = tile;
-        if (t_env->board[tile] == -1) {        // spot is free
-            t_env->board[tile] = t_env->cfd_o;
-            return O_SUCCESS;
+        for(int i = 0; i < t_env->common.num_players; i++){
+            write_response(t_env->common.clients[i]->uid,  RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_END, 2, buffer);
         }
-        return O_FAIL;
+        return COMPLETE;
+    }else{
+        uint8_t buffer[1];
+        buffer[0] = req.payload[0];
+        for(int i = 0; i < t_env->common.num_players; i++){
+            if(t_env->common.clients[i]->uid != t_env->turn){
+                t_env->turn = t_env->common.clients[i]->uid;
+                write_response(t_env->common.clients[i]->uid , RESPONSE_UPDATE_UPDATE, UPDATE_CONTEXT_MOVE, 1, buffer);
+                break;
+            }
+        }
+        return FSM_EXIT;
     }
-    return O_FAIL;
 }
 
-int o_fail(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    printf("%s: O fail\n", t_env->common.name);
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_FAIL);
-    dc_write(t_env->cfd_o, t_env->buffer, 3);
-
-    return O_TURN;
-}
-
-int o_success(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    if (has_won_game(t_env->cfd_o, t_env->board)) {
-        return O_WIN;
-    }
-    if (is_game_tied(t_env->board)) {
-        return TIE;
-    }
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_GO);
-    send(t_env->cfd_x, t_env->buffer, 3, MSG_NOSIGNAL);
-
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_WAIT);
-    send(t_env->cfd_o, t_env->buffer, 3, MSG_NOSIGNAL);
-    return X_TURN;
-}
-
-int o_win(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    memset(t_env->buffer, 0, BUFFSIZE);
-
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_WIN);
-    dc_write(t_env->cfd_o, t_env->buffer, 3);
-    if (t_env->x_connected == 1) {
-        sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_LOSE);
-        dc_write(t_env->cfd_x, t_env->buffer, 3);
-    }
-    printf("%s: O wins!\n", t_env->common.name);
-    return COMPLETE;
-}
-
-int tie(struct dc_fsm_environment *env) {
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    memset(t_env->buffer, 0, BUFFSIZE);
-    sprintf(t_env->buffer, "%c%d%d", t_env->prev_player, t_env->prev_pos, STATUS_TIE);
-
-    dc_write(t_env->cfd_x, t_env->buffer, 3);
-    dc_write(t_env->cfd_o, t_env->buffer, 3);
-
-    dc_close(t_env->cfd_x);
-    dc_close(t_env->cfd_o);
-    printf("%s: Tie game!\n", t_env->common.name);
-    return COMPLETE;
-}
-
-int complete_game(struct dc_fsm_environment *env){
-    TicTacToeEnv *t_env;
-    t_env = (TicTacToeEnv *) env;
-    printf("%s: Deleting game\n", t_env->common.name);
-    t_env->complete = 1;
+int ttt_complete(struct dc_fsm_environment *env){
+    TicTacToeEnv *t_env = (TicTacToeEnv *) env;
+    t_env->common.complete = true;
     return FSM_EXIT;
 }

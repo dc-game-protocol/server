@@ -29,13 +29,13 @@ int rps_validate(struct dc_fsm_environment *env){
 
     Request req = *r_env->common.buffer;
     if(req.context != 1){
-        write_response(req.uid, RESPONSE_ERROR_CONTEXT, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_ERROR_CONTEXT, req.type, 0, NULL);
         return FSM_EXIT;
     }else if(req.len_payload != 1){
-        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.type, 0, NULL);
         return FSM_EXIT;
     }else if(!(req.payload[0]>0 && req.payload[0]<4)){
-        write_response(req.uid, RESPONSE_GAME_ERROR_INVALID, req.context, 0, NULL);
+        write_response(req.uid, RESPONSE_GAME_ERROR_INVALID, req.type, 0, NULL);
         return FSM_EXIT;
     }
 
@@ -45,7 +45,7 @@ int rps_validate(struct dc_fsm_environment *env){
             if(r_env->moves[i] == -1)
                 r_env->moves[i] = req.payload[0];
             else{
-                write_response(req.uid, RESPONSE_GAME_ERROR_TURN, req.context, 0, NULL);
+                write_response(req.uid, RESPONSE_GAME_ERROR_TURN, req.type, 0, NULL);
                 return FSM_EXIT;
             }
         }

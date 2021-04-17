@@ -5,6 +5,7 @@
 //#include "tictactoe_trans.h"
 
 #include "../games/rockpaperscissors/rockpaperscissors_trans.h"
+#include "../games/tictactoe/tictactoe_trans.h"
 
 int get_port(int argc, const char *argv[]){
     int opt;
@@ -45,7 +46,7 @@ int get_port(int argc, const char *argv[]){
 void run(GameEnv * env){
     struct state_transition* transitions;
     if(env->game_id == TTT){
-
+        transitions = ttt_transitions;
     }else if(env->game_id == RPS){
         transitions = rps_transitions;
     }

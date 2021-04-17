@@ -9,7 +9,6 @@ int get_request(int fd, Request* req){
     if(retval == 0){
         return PARSE_DISCONNECT;
     }
-    req->uid = ntohl(req->uid);
     retval = dc_read(fd, &req->type, 1);
     if(retval == 0){
         return RESPONSE_ERROR_REQUEST;
@@ -33,7 +32,6 @@ int get_request(int fd, Request* req){
     if(retval != req->len_payload){
         return RESPONSE_ERROR_PAYLOAD;
     }else if(req->type!= REQTYPE_CONFIRMATION && req->uid != fd){
-        //invalid uid(31)
         return RESPONSE_ERROR_UID;
     }else{
         return PARSE_VALID;
