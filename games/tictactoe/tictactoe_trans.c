@@ -46,6 +46,22 @@ int ttt_start(struct dc_fsm_environment *env) {
 }
 
 int ttt_validate(struct dc_fsm_environment *env){
+    TicTacToeEnv *t_env = (TicTacToeEnv *) env;
+    Request req = *t_env->common.buffer;
+
+    if(req.uid != t_env->turn){
+        write_response(req.uid, RESPONSE_GAME_ERROR_TURN, req.context, 0, NULL);
+        return FSM_EXIT;
+    }else if(req.context != 1){
+        write_response(req.uid, RESPONSE_ERROR_CONTEXT, req.context, 0, NULL);
+        return FSM_EXIT;
+    }else if(req.len_payload != 1){
+        write_response(req.uid, RESPONSE_ERROR_PAYLOAD, req.context, 0, NULL);
+        return FSM_EXIT;
+    }else if(!(req.payload[0]>0 && req.payload[0]<4)){
+        write_response(req.uid, RESPONSE_GAME_ERROR_INVALID, req.context, 0, NULL);
+        return FSM_EXIT;
+    }
 
 }
 
