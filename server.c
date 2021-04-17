@@ -112,8 +112,10 @@ int main(int argc, const char *argv[]) {
                                     break;
                                 case REQTYPE_META:
                                     //handle quit
-                                    if(req.context == 1)
+                                    if(req.context == 1){
+                                        write_response(i, RESPONSE_SUCCESS_SUCCESS, req.type, 0 , NULL);
                                         gameEnv_endGame(curr_client->gameEnv, &serverEnv, i);
+                                    }
                                     else
                                         res_status = RESPONSE_ERROR_CONTEXT;
                                     break;
