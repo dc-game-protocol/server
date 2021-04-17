@@ -74,8 +74,8 @@ int main(int argc, const char *argv[]) {
                         sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->gameEnv->clients[i]->addr,client->gameEnv->clients[i]->addr_len);
                 }
                 //update client's ordering
-                client->ordering = ordering
-            };
+                client->ordering = ordering;
+            }
            
         }else if (FD_ISSET(serverEnv.tcp_fd, &fds_temp)) {
             //add to clients
