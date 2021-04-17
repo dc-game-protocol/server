@@ -52,13 +52,14 @@ int main(int argc, const char *argv[]) {
 
         if(FD_ISSET(serverEnv.udp_fd, &fds_temp)){
             int n_recv= recvfrom(serverEnv.udp_fd, udp_buffer, udp_len, MSG_WAITALL, &in_addr, &addr_len);
-            if(n_recv< 64) continue;
+            if(n_recv< 2) continue;
             //parse ordering
             uint32_t ordering = udp_buffer[0] | (udp_buffer[1] << 8) | (udp_buffer[2] << 16) | (udp_buffer[3] << 24);
             //parse user id
             uint32_t uid = udp_buffer[4] | (udp_buffer[5] << 8) | (udp_buffer[6] << 16) | (udp_buffer[7] << 24);
             //find client with user id
             Client* client = serverEnv.clients[uid];
+            if(client==NULL) continue;
             //if they don't have a socket, create socket
             if(client->addr == NULL){
                 client->addr = (struct sockaddr_in *) calloc(0, sizeof(struct sockaddr_in));
