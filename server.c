@@ -59,22 +59,24 @@ int main(int argc, const char *argv[]) {
             uint32_t uid = udp_buffer[4] | (udp_buffer[5] << 8) | (udp_buffer[6] << 16) | (udp_buffer[7] << 24);
             //find client with user id
             Client* client = serverEnv.clients[uid];
-            if(client==NULL) continue;
-            //if they don't have a socket, create socket
-            if(client->addr == NULL){
-                client->addr = (struct sockaddr_in *) calloc(0, sizeof(struct sockaddr_in));
-            }
-            *(client->addr) = in_addr;
-            client->addr_len = addr_len;
-            //drop packet if it's late
-            if(ordering<client->ordering) continue;
-            //transmit data to all sockets in their game
-            for(int i = 0; i < client->gameEnv->player_count; i++){
-                if(client->gameEnv->clients[i]->uid != uid && client->gameEnv->clients[i]->addr != NULL)
-                    sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->gameEnv->clients[i]->addr,client->gameEnv->clients[i]->addr_len);
-            }
-            //update client's ordering
-            client->ordering = ordering;
+            if(client!=NULL){
+                 //if they don't have a socket, create socket
+                if(client->addr == NULL){
+                    client->addr = (struct sockaddr_in *) calloc(0, sizeof(struct sockaddr_in));
+                }
+                *(client->addr) = in_addr;
+                client->addr_len = addr_len;
+                //drop packet if it's late
+                if(ordering<client->ordering) continue;
+                //transmit data to all sockets in their game
+                for(int i = 0; i < client->gameEnv->player_count; i++){
+                    if(client->gameEnv->clients[i]->uid != uid && client->gameEnv->clients[i]->addr != NULL)
+                        sendto(serverEnv.udp_fd, udp_buffer, n_recv, 0,client->gameEnv->clients[i]->addr,client->gameEnv->clients[i]->addr_len);
+                }
+                //update client's ordering
+                client->ordering = ordering
+            };
+           
         }else if (FD_ISSET(serverEnv.tcp_fd, &fds_temp)) {
             //add to clients
             int fd = dc_accept(serverEnv.tcp_fd, NULL, NULL);
